@@ -1,0 +1,42 @@
+// Escala de azul anclada en #131936 (tono de marca).
+// Se derivan variantes aclaradas (menos saturación, más luminosidad) y
+// oscurecidas para hover, estados activos y degradados de fondo.
+$blue-50: #f0f2fa;
+$blue-100: #e1e4f4;
+$blue-200: #c4cae9;
+$blue-300: #9aa4d6;
+$blue-400: #6977bf;
+$blue-500: #35448d;
+$blue-600: #131936;
+$blue-700: #0f132a;
+$blue-800: #0b0e1e;
+$blue-900: #070913;
+
+$blue-brand: #131936;
+$blue-brand-hover: #2f354e;
+$blue-brand-active: #0e1329;
+
+// Escala de gris anclada en #e1e2e4 (tono neutro de marca).
+// Sirve como fondo de app y borde de tarjeta; los tonos más oscuros
+// sostienen jerarquía de texto, bordes y estados deshabilitados.
+$gray-50: #f7f7f8;
+$gray-100: #e1e2e4;
+$gray-200: #d0d1d4;
+$gray-300: #b8babe;
+$gray-400: #92959b;
+$gray-500: #6f7276;
+$gray-600: #55585c;
+$gray-700: #414347;
+$gray-800: #2b2c30;
+$gray-900: #1a1b1e;
+
+$gray-brand: #e1e2e4;
+
+$white: #ffffff;
+
+$danger: #b91c1c;
+$danger-soft: #fdf2f2;
+$danger-border: #f5c6c6;
+$success: #15803d;
+
+$font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

@@ -1,59 +1,85 @@
 # FrontendAdmin
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.37.
+Panel de administración del sistema inmobiliario (Angular 20). Consume la API del
+backend en `../Backend-`.
 
-## Development server
+## Requisitos
 
-To start a local development server, run:
+- Node.js 20 o superior
+- La API corriendo en `http://localhost:8000` (ver el README del backend)
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Puesta en marcha
 
 ```bash
-ng generate component component-name
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Abrí `http://localhost:4200/`. El proxy de `proxy.conf.json` reenvía las rutas
+`/api` a `http://localhost:8000`, así que no hace falta configurar ninguna URL.
 
-```bash
-ng generate --help
+Credenciales del usuario inicial (las crea el seed del backend):
+
 ```
+admin@inmobiliaria.com / admin123
+```
+
+## Pantallas
+
+| Ruta                        | Descripción                                             |
+|-----------------------------|---------------------------------------------------------|
+| `/login`                    | Inicio de sesión                                        |
+| `/dashboard`                | KPIs, distribución por estado y últimas propiedades      |
+| `/categorias`               | Listado de categorías                                   |
+| `/categorias/nueva`         | Alta de categoría                                       |
+| `/categorias/:id/editar`    | Edición de categoría                                    |
+| `/propiedades`              | Listado de propiedades                                  |
+| `/propiedades/nueva`        | Alta de propiedad                                       |
+| `/propiedades/:id/editar`   | Edición de propiedad                                    |
+
+Todas las rutas salvo `/login` están protegidas por `authGuard`.
+
+## Estructura
+
+```
+src/
+├── styles/
+│   ├── _tokens.scss        Variables SCSS (fuente de verdad del tema)
+│   └── _components.scss    .btn, .card, .table, .badge, .field, .modal, .alert
+├── styles.scss             Tokens → custom properties + reset
+└── app/
+    ├── core/models.ts      Interfaces que reflejan el JSON de la API
+    ├── services/
+    │   ├── api.service.ts      Desenvuelve {success, data} y normaliza errores
+    │   ├── auth.service.ts     Sesión y token en localStorage
+    │   ├── categoria.service.ts
+    │   ├── propiedad.service.ts
+    │   └── geografia.service.ts
+    ├── interceptors/
+    │   ├── auth-token.interceptor.ts   Agrega Authorization: Bearer
+    │   └── unauthorized.interceptor.ts Cierra sesión ante un 401
+    ├── guards/             authGuard, guestGuard
+    └── pages/              login, dashboard, categorias, propiedades
+```
+
+## Notas de implementación
+
+- Los componentes son **no standalone** (`standalone: false`), declarados en
+  `app-module.ts`. Es lo que fija `angular.json` en los schematics.
+- El estado es con **signals**, sin librerías externas.
+- Los estilos usan **BEM con SCSS** y las custom properties de `styles.scss`.
+  Las clases genéricas viven en `_components.scss` para no repetirlas por pantalla.
+- `ApiService` es el único que conoce el sobre `{success, data, error}`. El resto
+  de los servicios y las pantallas reciben el `data` ya desenvuelto.
+- El logout es del lado del cliente: los tokens del backend son sin estado, sin
+  tabla de revocación.
 
 ## Building
 
-To build the project run:
-
 ```bash
-ng build
+npm run build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Los artefactos quedan en `dist/`. En producción el build no lleva ninguna URL de
+API: hay que servir la app y la API bajo el mismo origen (por ejemplo detrás del
+mismo reverse proxy) o agregar unenvironments con `fileReplacements`.

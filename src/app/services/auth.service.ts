@@ -1,12 +1,13 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, map, tap, throwError } from 'rxjs';
+
+import { ApiService } from './api.service';
 
 export interface AuthUser {
   id: number;
   nombre: string;
   email: string;
-  rol?: string;
+  rol: string;
 }
 
 export interface AuthSession {
@@ -20,23 +21,12 @@ export interface LoginCredentials {
   remember: boolean;
 }
 
-export interface ApiError {
-  message: string;
-  fields?: Record<string, string>;
-}
-
-interface ApiEnvelope<T> {
-  success: boolean;
-  data?: T;
-  error?: { code: number; message: string; details?: unknown };
-}
-
 const STORAGE_KEY = 'inmobiliaria_admin_session';
 const LOGIN_URL = '/api/auth/login';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(ApiService);
 
   private readonly sessionState = signal<AuthSession | null>(this.restore());
   private readonly loadingState = signal(false);
@@ -49,19 +39,19 @@ export class AuthService {
   login(credentials: LoginCredentials): Observable<AuthSession> {
     this.loadingState.set(true);
 
-    return this.http
-      .post<ApiEnvelope<AuthSession>>(LOGIN_URL, {
+    return this.api
+      .post<AuthSession>(LOGIN_URL, {
         email: credentials.email,
         password: credentials.password,
         remember: credentials.remember,
       })
       .pipe(
-        map((response) => {
-          if (!response?.success || !response.data?.token) {
+        map((session) => {
+          if (!session?.token || !session.user) {
             throw new Error('La respuesta de autenticación no fue válida.');
           }
 
-          return response.data;
+          return session;
         }),
         tap((session) => {
           this.persist(session);
@@ -69,9 +59,7 @@ export class AuthService {
         }),
         catchError((error: unknown) => {
           this.loadingState.set(false);
-          return throwError(() =>
-            error instanceof HttpErrorResponse ? this.normalizeError(error) : this.normalizeErrorUnknown(error),
-          );
+          return throwError(() => this.api.normalizeError(error));
         }),
       );
   }
@@ -104,6 +92,7 @@ export class AuthService {
     }
 
     const raw = localStorage.getItem(STORAGE_KEY);
+
     if (!raw) {
       return null;
     }
@@ -121,51 +110,5 @@ export class AuthService {
       this.clearStorage();
       return null;
     }
-  }
-
-  private normalizeErrorUnknown(error: unknown): ApiError {
-    return {
-      message: error instanceof Error ? error.message : 'Ocurrió un error inesperado. Intenta nuevamente.',
-    };
-  }
-
-  private normalizeError(error: HttpErrorResponse): ApiError {
-    const body = error.error as ApiEnvelope<never> | null;
-
-    return {
-      message:
-        body?.error?.message ??
-        (error.status === 0
-          ? 'No se pudo conectar con el servidor. Verifica que la API esté activa.'
-          : 'Ocurrió un error inesperado. Intenta nuevamente.'),
-      fields: this.extractFieldErrors(body?.error?.details),
-    };
-  }
-
-  private extractFieldErrors(details: unknown): Record<string, string> | undefined {
-    if (Array.isArray(details)) {
-      const fields: Record<string, string> = {};
-
-      for (const entry of details) {
-        if (entry && typeof entry === 'object' && 'field' in entry && 'message' in entry) {
-          const { field, message } = entry as { field: string; message: string };
-          fields[field] = message;
-        }
-      }
-
-      return Object.keys(fields).length > 0 ? fields : undefined;
-    }
-
-    if (details && typeof details === 'object') {
-      const fields = Object.fromEntries(
-        Object.entries(details as Record<string, unknown>).filter(
-          ([, value]) => typeof value === 'string',
-        ),
-      ) as Record<string, string>;
-
-      return Object.keys(fields).length > 0 ? fields : undefined;
-    }
-
-    return undefined;
   }
 }

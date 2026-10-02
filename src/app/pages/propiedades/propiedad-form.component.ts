@@ -4,10 +4,27 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, forkJoin, of, switchMap, tap } from 'rxjs';
 
 import { ApiError } from '../../services/api.service';
+import { ESTADOS_PROPIEDAD } from '../../core/estado-propiedad';
 import { Categoria, EstadoPropiedad, Localidad, Pais, Provincia, PropiedadInput } from '../../core/models';
 import { CategoriaService } from '../../services/categoria.service';
 import { GeografiaService } from '../../services/geografia.service';
 import { PropiedadService } from '../../services/propiedad.service';
+
+const MENSAJES: Record<string, string> = {
+  'nombre.required': 'El nombre es obligatorio.',
+  'nombre.maxlength': 'El nombre debe tener hasta 200 caracteres.',
+  'metros_cuadrados.required': 'La superficie es obligatoria.',
+  'metros_cuadrados.min': 'La superficie no puede ser negativa.',
+  'valor.required': 'El valor es obligatorio.',
+  'valor.min': 'El valor no puede ser negativo.',
+  'cantidad_habitaciones.required': 'La cantidad de habitaciones es obligatoria.',
+  'cantidad_habitaciones.min': 'La cantidad de habitaciones no puede ser negativa.',
+  'cantidad_ambientes.required': 'La cantidad de ambientes es obligatoria.',
+  'cantidad_ambientes.min': 'La cantidad de ambientes no puede ser negativa.',
+  'descripcion.required': 'La descripción es obligatoria.',
+  'descripcion.maxlength': 'La descripción debe tener hasta 5000 caracteres.',
+  'estado.required': 'El estado es obligatorio.',
+};
 
 @Component({
   selector: 'app-propiedad-form',
@@ -55,15 +72,15 @@ import { PropiedadService } from '../../services/propiedad.service';
                     maxlength="200"
                     [attr.aria-invalid]="campoInvalido('nombre')"
                   />
-                  @if (campoInvalido('nombre')) {
-                    <p class="field__error">El nombre es obligatorio y debe tener hasta 200 caracteres.</p>
-                  } @else if (erroresCampo()['nombre']) {
-                    <p class="field__error">{{ erroresCampo()['nombre'] }}</p>
+                  @if (mensajeCampo('nombre')) {
+                    <p class="field__error">{{ mensajeCampo('nombre') }}</p>
                   }
                 </div>
 
                 <div class="field">
-                  <label class="field__label" for="metros_cuadrados">Superficie (m²)</label>
+                  <label class="field__label" for="metros_cuadrados">
+                    Superficie (m²) <span class="field__optional">*</span>
+                  </label>
                   <input
                     id="metros_cuadrados"
                     type="number"
@@ -72,14 +89,15 @@ import { PropiedadService } from '../../services/propiedad.service';
                     class="field__input"
                     formControlName="metros_cuadrados"
                     placeholder="120.50"
+                    [attr.aria-invalid]="campoInvalido('metros_cuadrados')"
                   />
-                  @if (erroresCampo()['metros_cuadrados']) {
-                    <p class="field__error">{{ erroresCampo()['metros_cuadrados'] }}</p>
+                  @if (mensajeCampo('metros_cuadrados')) {
+                    <p class="field__error">{{ mensajeCampo('metros_cuadrados') }}</p>
                   }
                 </div>
 
                 <div class="field">
-                  <label class="field__label" for="valor">Valor</label>
+                  <label class="field__label" for="valor">Valor <span class="field__optional">*</span></label>
                   <input
                     id="valor"
                     type="number"
@@ -88,14 +106,17 @@ import { PropiedadService } from '../../services/propiedad.service';
                     class="field__input"
                     formControlName="valor"
                     placeholder="250000"
+                    [attr.aria-invalid]="campoInvalido('valor')"
                   />
-                  @if (erroresCampo()['valor']) {
-                    <p class="field__error">{{ erroresCampo()['valor'] }}</p>
+                  @if (mensajeCampo('valor')) {
+                    <p class="field__error">{{ mensajeCampo('valor') }}</p>
                   }
                 </div>
 
                 <div class="field">
-                  <label class="field__label" for="cantidad_habitaciones">Habitaciones</label>
+                  <label class="field__label" for="cantidad_habitaciones">
+                    Habitaciones <span class="field__optional">*</span>
+                  </label>
                   <input
                     id="cantidad_habitaciones"
                     type="number"
@@ -103,11 +124,17 @@ import { PropiedadService } from '../../services/propiedad.service';
                     class="field__input"
                     formControlName="cantidad_habitaciones"
                     placeholder="3"
+                    [attr.aria-invalid]="campoInvalido('cantidad_habitaciones')"
                   />
+                  @if (mensajeCampo('cantidad_habitaciones')) {
+                    <p class="field__error">{{ mensajeCampo('cantidad_habitaciones') }}</p>
+                  }
                 </div>
 
                 <div class="field">
-                  <label class="field__label" for="cantidad_ambientes">Ambientes</label>
+                  <label class="field__label" for="cantidad_ambientes">
+                    Ambientes <span class="field__optional">*</span>
+                  </label>
                   <input
                     id="cantidad_ambientes"
                     type="number"
@@ -115,19 +142,24 @@ import { PropiedadService } from '../../services/propiedad.service';
                     class="field__input"
                     formControlName="cantidad_ambientes"
                     placeholder="5"
+                    [attr.aria-invalid]="campoInvalido('cantidad_ambientes')"
                   />
+                  @if (mensajeCampo('cantidad_ambientes')) {
+                    <p class="field__error">{{ mensajeCampo('cantidad_ambientes') }}</p>
+                  }
                 </div>
 
                 <div class="field">
                   <label class="field__label" for="estado">Estado <span class="field__optional">*</span></label>
                   <div class="field__control">
                     <select id="estado" class="field__select" formControlName="estado">
-                      <option value="disponible">Disponible</option>
-                      <option value="alquilada">Alquilada</option>
+                      @for (opcion of estados; track opcion.valor) {
+                        <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+                      }
                     </select>
                   </div>
-                  @if (erroresCampo()['estado']) {
-                    <p class="field__error">{{ erroresCampo()['estado'] }}</p>
+                  @if (mensajeCampo('estado')) {
+                    <p class="field__error">{{ mensajeCampo('estado') }}</p>
                   }
                 </div>
 
@@ -140,7 +172,7 @@ import { PropiedadService } from '../../services/propiedad.service';
                 </div>
 
                 <div class="field grid--full">
-                  <label class="field__label" for="descripcion">Descripción <span class="field__optional">(opcional)</span></label>
+                  <label class="field__label" for="descripcion">Descripción <span class="field__optional">*</span></label>
                   <textarea
                     id="descripcion"
                     rows="4"
@@ -148,9 +180,10 @@ import { PropiedadService } from '../../services/propiedad.service';
                     formControlName="descripcion"
                     placeholder="Características de la propiedad"
                     maxlength="5000"
+                    [attr.aria-invalid]="campoInvalido('descripcion')"
                   ></textarea>
-                  @if (erroresCampo()['descripcion']) {
-                    <p class="field__error">{{ erroresCampo()['descripcion'] }}</p>
+                  @if (mensajeCampo('descripcion')) {
+                    <p class="field__error">{{ mensajeCampo('descripcion') }}</p>
                   }
                 </div>
               </div>
@@ -167,8 +200,8 @@ import { PropiedadService } from '../../services/propiedad.service';
             <div class="card__body">
               <div class="grid grid--three">
                 <div class="field">
-                  <label class="field__label" for="pais">País</label>
-                  <div class="field__control">
+                  <label class="field__label" for="pais">País <span class="field__optional">*</span></label>
+                  <div class="field__control" [class.field__control--invalid]="cargandoPaises()">
                     <select
                       id="pais"
                       class="field__select"
@@ -184,7 +217,9 @@ import { PropiedadService } from '../../services/propiedad.service';
                 </div>
 
                 <div class="field">
-                  <label class="field__label" for="provincia">Provincia</label>
+                  <label class="field__label" for="provincia">
+                    Provincia <span class="field__optional">*</span>
+                  </label>
                   <div class="field__control">
                     <select
                       id="provincia"
@@ -201,13 +236,14 @@ import { PropiedadService } from '../../services/propiedad.service';
                 </div>
 
                 <div class="field">
-                  <label class="field__label" for="localidad">Localidad</label>
-                  <div class="field__control">
+                  <label class="field__label" for="localidad">Localidad <span class="field__optional">*</span></label>
+                  <div class="field__control" [class.field__control--invalid]="localidadInvalida()">
                     <select
                       id="localidad"
                       class="field__select"
                       [formControl]="localidadControl"
                       [disabled]="!provinciaControl.value"
+                      [attr.aria-invalid]="localidadInvalida()"
                     >
                       <option [ngValue]="null">Seleccionar localidad...</option>
                       @for (localidad of localidades(); track localidad.id) {
@@ -217,6 +253,8 @@ import { PropiedadService } from '../../services/propiedad.service';
                   </div>
                   @if (erroresCampo()['localidad_id']) {
                     <p class="field__error">{{ erroresCampo()['localidad_id'] }}</p>
+                  } @else if (localidadInvalida()) {
+                    <p class="field__error">Seleccioná una localidad.</p>
                   }
                 </div>
               </div>
@@ -314,20 +352,22 @@ export class PropiedadFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
+  readonly estados = ESTADOS_PROPIEDAD;
+
   readonly form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(200)]],
-    metros_cuadrados: [null as number | null],
-    valor: [null as number | null],
-    cantidad_habitaciones: [0 as number | null],
-    cantidad_ambientes: [0 as number | null],
-    descripcion: ['' as string | null],
+    metros_cuadrados: [null as number | null, [Validators.required, Validators.min(0)]],
+    valor: [null as number | null, [Validators.required, Validators.min(0)]],
+    cantidad_habitaciones: [null as number | null, [Validators.required, Validators.min(0)]],
+    cantidad_ambientes: [null as number | null, [Validators.required, Validators.min(0)]],
+    descripcion: ['' as string | null, [Validators.required, Validators.maxLength(5000)]],
     apto_credito: [false],
-    estado: ['disponible' as EstadoPropiedad],
+    estado: ['disponible' as EstadoPropiedad, Validators.required],
   });
 
   readonly paisControl = this.fb.control<number | null>(null);
   readonly provinciaControl = this.fb.control<number | null>(null);
-  readonly localidadControl = this.fb.control<number | null>(null);
+  readonly localidadControl = this.fb.control<number | null>(null, Validators.required);
 
   readonly id = signal<number | null>(null);
   readonly esEdicion = signal(false);
@@ -418,6 +458,33 @@ export class PropiedadFormComponent implements OnInit {
     return control.invalid && (control.dirty || control.touched);
   }
 
+  /**
+   * Mensaje de validación en español para los errores del formulario.
+   * Si el control es válido, delega en el mensaje que devolvió la API.
+   */
+  mensajeCampo(campo: string): string | null {
+    const control = this.form.controls[campo as keyof typeof this.form.controls];
+
+    if (!control || !control.errors || !(control.dirty || control.touched)) {
+      return this.erroresCampo()[campo] ?? null;
+    }
+
+    const errores = control.errors;
+    const clave = errores['required']
+      ? 'required'
+      : errores['min']
+        ? 'min'
+        : errores['maxlength']
+          ? 'maxlength'
+          : null;
+
+    return clave ? (MENSAJES[`${campo}.${clave}`] ?? 'Revisá el valor ingresado.') : null;
+  }
+
+  localidadInvalida(): boolean {
+    return this.localidadControl.invalid && (this.localidadControl.dirty || this.localidadControl.touched);
+  }
+
   alternarCategoria(id: number): void {
     this.seleccionadas.update((lista) =>
       lista.includes(id) ? lista.filter((item) => item !== id) : [...lista, id],
@@ -432,8 +499,17 @@ export class PropiedadFormComponent implements OnInit {
     this.errorGeneral.set(null);
     this.erroresCampo.set({});
     this.form.markAllAsTouched();
+    this.localidadControl.markAsTouched();
 
-    if (this.form.invalid) {
+    if (this.form.invalid || this.localidadControl.invalid) {
+      return;
+    }
+
+    const descripcion = this.form.controls.descripcion.value?.trim() ?? '';
+
+    if (descripcion === '') {
+      this.form.controls.descripcion.setErrors({ required: true });
+      this.form.controls.descripcion.markAsTouched();
       return;
     }
 
@@ -447,7 +523,7 @@ export class PropiedadFormComponent implements OnInit {
       valor: valor.valor,
       cantidad_habitaciones: valor.cantidad_habitaciones,
       cantidad_ambientes: valor.cantidad_ambientes,
-      descripcion: valor.descripcion?.trim() || null,
+      descripcion,
       apto_credito: valor.apto_credito,
       estado: valor.estado,
       categorias: this.seleccionadas(),

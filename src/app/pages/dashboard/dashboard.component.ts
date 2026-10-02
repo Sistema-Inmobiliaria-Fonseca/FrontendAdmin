@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
+import { estadoBadge, estadoLabel } from '../../core/estado-propiedad';
 import { Categoria, EstadoPropiedad, Propiedad } from '../../core/models';
 import { CategoriaService } from '../../services/categoria.service';
 import { PropiedadService } from '../../services/propiedad.service';
@@ -54,14 +55,14 @@ interface DashboardKpi {
             <div class="card__header">
               <div>
                 <h3 class="card__title">Propiedades por estado</h3>
-                <p class="card__subtitle">Distribución entre disponibles y alquiladas.</p>
+                <p class="card__subtitle">Distribución entre disponibles y ocupadas.</p>
               </div>
             </div>
             <div class="card__body">
               <ul class="list">
                 @for (item of porEstado(); track item.estado) {
                   <li class="list__item">
-                    <span class="list__label">{{ item.estado }}</span>
+                    <span class="list__label">{{ estadoLabel(item.estado) }}</span>
                     <span class="list__value">{{ item.cantidad }}</span>
                   </li>
                 }
@@ -112,11 +113,9 @@ interface DashboardKpi {
                           {{ propiedad.ubicacion ? propiedad.ubicacion.localidad.nombre + ', ' + propiedad.ubicacion.pais.nombre : 'Sin ubicación' }}
                         </p>
                       </div>
-                      @if (propiedad.estado === 'disponible') {
-                        <span class="badge badge--success">Disponible</span>
-                      } @else {
-                        <span class="badge badge--info">Alquilada</span>
-                      }
+                      <span class="badge" [ngClass]="estadoBadge(propiedad.estado)">
+                        {{ estadoLabel(propiedad.estado) }}
+                      </span>
                     </li>
                   }
                 </ul>
@@ -279,6 +278,9 @@ export class DashboardComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly propiedades = signal<Propiedad[]>([]);
 
+  readonly estadoLabel = estadoLabel;
+  readonly estadoBadge = estadoBadge;
+
   readonly kpis = signal<DashboardKpi[]>([]);
   readonly porEstado = signal<{ estado: EstadoPropiedad; cantidad: number }[]>([]);
   readonly topCategorias = signal<{ nombre: string; cantidad: number }[]>([]);
@@ -303,7 +305,7 @@ export class DashboardComponent implements OnInit {
 
   private calcular(totalCategorias: number, propiedades: Propiedad[]): void {
     const disponibles = propiedades.filter((p) => p.estado === 'disponible').length;
-    const alquiladas = propiedades.filter((p) => p.estado === 'alquilada').length;
+    const ocupadas = propiedades.filter((p) => p.estado === 'alquilada').length;
 
     const conMetros = propiedades.filter((p) => p.metros_cuadrados !== null);
     const conValor = propiedades.filter((p) => p.valor !== null);
@@ -318,7 +320,7 @@ export class DashboardComponent implements OnInit {
     this.kpis.set([
       { label: 'Propiedades', value: String(propiedades.length) },
       { label: 'Disponibles', value: String(disponibles) },
-      { label: 'Alquiladas', value: String(alquiladas) },
+      { label: 'Ocupadas', value: String(ocupadas) },
       { label: 'Categorías', value: String(totalCategorias) },
       {
         label: 'Superficie promedio',
@@ -334,7 +336,7 @@ export class DashboardComponent implements OnInit {
 
     this.porEstado.set([
       { estado: 'disponible', cantidad: disponibles },
-      { estado: 'alquilada', cantidad: alquiladas },
+      { estado: 'alquilada', cantidad: ocupadas },
     ]);
 
     const conteo = new Map<string, number>();

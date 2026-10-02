@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, of } from 'rxjs';
 
+import { estadoBadge, estadoLabel } from '../../core/estado-propiedad';
 import { Propiedad } from '../../core/models';
 import { PropiedadService } from '../../services/propiedad.service';
 
@@ -64,11 +65,9 @@ import { PropiedadService } from '../../services/propiedad.service';
                   <tr>
                     <td class="table__strong">{{ propiedad.nombre }}</td>
                     <td>
-                      @if (propiedad.estado === 'disponible') {
-                        <span class="badge badge--success">Disponible</span>
-                      } @else {
-                        <span class="badge badge--info">Alquilada</span>
-                      }
+                      <span class="badge" [ngClass]="estadoBadge(propiedad.estado)">
+                        {{ estadoLabel(propiedad.estado) }}
+                      </span>
                     </td>
                     <td>
                       @if (propiedad.ubicacion) {
@@ -152,6 +151,9 @@ import { PropiedadService } from '../../services/propiedad.service';
 export class PropiedadesListComponent implements OnInit {
   private readonly propiedadService = inject(PropiedadService);
   private readonly router = inject(Router);
+
+  readonly estadoLabel = estadoLabel;
+  readonly estadoBadge = estadoBadge;
 
   readonly propiedades = signal<Propiedad[]>([]);
   readonly cargando = signal(true);

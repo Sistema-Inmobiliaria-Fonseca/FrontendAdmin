@@ -75,6 +75,7 @@ export interface Propiedad {
   updated_at: string;
   ubicacion: Ubicacion | null;
   categorias: CategoriaResumen[];
+  imagenes?: PropiedadImagen[];
 }
 
 export interface PropiedadInput {
@@ -89,3 +90,14 @@ export interface PropiedadInput {
   estado?: EstadoPropiedad;
   categorias?: number[];
 }
+export interface PropiedadImagen {
+  id: number;
+  nombre_archivo: string;
+  nombre_original: string;
+  mime_type: string;
+  tamano: number;
+  orden: number;
+  url?: string;
+  created_at: string;
+}
+

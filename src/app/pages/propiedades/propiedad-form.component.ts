@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, forkJoin, of, switchMap, tap } from 'rxjs';
 
 import { ApiError } from '../../services/api.service';
+import { HttpClient } from '@angular/common/http';
 import { ESTADOS_PROPIEDAD } from '../../core/estado-propiedad';
 import { Categoria, EstadoPropiedad, Localidad, Pais, Provincia, PropiedadInput } from '../../core/models';
 import { CategoriaService } from '../../services/categoria.service';
@@ -291,7 +292,81 @@ const MENSAJES: Record<string, string> = {
             </div>
           </section>
 
-          <div class="form-page__footer">
+          
+          <section class="card">
+            <div class="card__header">
+              <div>
+                <h3 class="card__title">Galería de fotos</h3>
+                <p class="card__subtitle">Puedes subir varias fotos, arrastrarlas para reordenar y elegir la foto principal.</p>
+              </div>
+            </div>
+            <div class="card__body">
+              <!-- Fotos existentes (edición) -->
+              @if (esEdicion() && fotosExistentes().length > 0) {
+                <div class="mb-4">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4>Fotos actuales</h4>
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="guardarOrden()" [disabled]="guardandoOrden()">
+                      {{ guardandoOrden() ? 'Guardando...' : 'Guardar orden' }}
+                    </button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+                    @for (foto of fotosExistentes(); track foto.id; let i = $index) {
+                      <div 
+                        draggable="true" 
+                        (dragstart)="onDragStart($event, i)" 
+                        (dragover)="allowDrop($event)" 
+                        (drop)="onDrop($event, i)"
+                        style="position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; cursor: move;"
+                        [style.border]="foto.is_main ? '2px solid #3b82f6' : '1px solid #e5e7eb'"
+                      >
+                        <img [src]="foto.url" style="width: 100%; height: 120px; object-fit: cover;" />
+                        @if (foto.is_main) {
+                          <span style="position: absolute; top: 8px; left: 8px; background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">Principal</span>
+                        }
+                        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;" 
+                             onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                          <button type="button" class="btn btn--sm" style="background: #3b82f6; color: white; font-size: 11px; padding: 4px 8px;" 
+                                  (click)="marcarPrincipalExistente(foto.id)" [disabled]="foto.is_main">Principal</button>
+                          <button type="button" class="btn btn--sm" style="background: #dc2626; color: white; font-size: 11px; padding: 4px 8px;" 
+                                  (click)="eliminarExistente(foto.id)">Eliminar</button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                  <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Arrastra las fotos para cambiar el orden y pulsa "Guardar orden"</p>
+                </div>
+              }
+
+              <!-- Nuevas fotos -->
+              <div>
+                <h4 style="margin-bottom: 0.75rem;">{{ esEdicion() ? 'Añadir nuevas fotos' : 'Seleccionar fotos' }}</h4>
+                <input type="file" multiple accept="image/*" (change)="onArchivosSeleccionados($event)" style="margin-bottom: 1rem;" />
+                
+                @if (previsualizaciones().length > 0) {
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    @for (prev of previsualizaciones(); track $index; let i = $index) {
+                      <div style="position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;"
+                           [style.border]="prev.principal ? '2px solid #3b82f6' : '1px solid #e5e7eb'">
+                        <img [src]="prev.url" style="width: 100%; height: 120px; object-fit: cover;" />
+                        @if (prev.principal) {
+                          <span style="position: absolute; top: 8px; left: 8px; background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">Principal</span>
+                        }
+                        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;" 
+                             onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                          <button type="button" class="btn btn--sm" style="background: #3b82f6; color: white; font-size: 11px; padding: 4px 8px;" 
+                                  (click)="marcarPrincipalNuevo(i)" [disabled]="prev.principal">Principal</button>
+                          <button type="button" class="btn btn--sm" style="background: #dc2626; color: white; font-size: 11px; padding: 4px 8px;" 
+                                  (click)="eliminarNuevo(i)">Eliminar</button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </section>
+<div class="form-page__footer">
             <button type="button" class="btn btn--secondary" (click)="volver()" [disabled]="guardando()">Cancelar</button>
             <button type="submit" class="btn btn--primary" [disabled]="guardando()">
               @if (guardando()) {
@@ -351,6 +426,7 @@ export class PropiedadFormComponent implements OnInit {
   private readonly geografiaService = inject(GeografiaService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   readonly estados = ESTADOS_PROPIEDAD;
 
@@ -376,6 +452,12 @@ export class PropiedadFormComponent implements OnInit {
   readonly cargandoPaises = signal(false);
   readonly errorGeneral = signal<string | null>(null);
   readonly erroresCampo = signal<Record<string, string>>({});
+
+  readonly fotosSeleccionadas = signal<File[]>([]);
+  readonly previsualizaciones = signal<any[]>([]);
+  readonly fotosExistentes = signal<any[]>([]);
+  readonly subiendoFotos = signal(false);
+  readonly guardandoOrden = signal(false);
 
   readonly paises = signal<Pais[]>([]);
   readonly provincias = signal<Provincia[]>([]);
@@ -447,6 +529,7 @@ export class PropiedadFormComponent implements OnInit {
             this.cargarProvincias(propiedad.ubicacion.pais.id, propiedad.ubicacion.provincia.id);
             this.cargarLocalidades(propiedad.ubicacion.provincia.id, propiedad.ubicacion.localidad.id);
           }
+          this.cargarFotos();
         }
 
         this.cargar();
@@ -544,10 +627,16 @@ export class PropiedadFormComponent implements OnInit {
         }),
       )
       .subscribe((resultado) => {
-        this.guardando.set(false);
-
         if (resultado) {
+          const propiedadId = (resultado as any)?.id || (resultado as any)?.data?.id;
+          if (propiedadId && this.fotosSeleccionadas().length > 0) {
+            this.subirFotos(propiedadId);
+            return;
+          }
+          this.guardando.set(false);
           void this.router.navigate(['/propiedades']);
+        } else {
+          this.guardando.set(false);
         }
       });
   }
@@ -592,5 +681,148 @@ export class PropiedadFormComponent implements OnInit {
           this.localidadControl.setValue(seleccionarId, { emitEvent: false });
         }
       });
+  }
+  onArchivosSeleccionados(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files) return;
+    const files = Array.from(input.files);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i] as any;
+      if (file.type && file.type.startsWith('image/')) {
+        const sel = this.fotosSeleccionadas();
+        sel.push(file);
+        this.fotosSeleccionadas.set(sel);
+        const reader = new FileReader();
+        reader.onload = () => {
+          const prev = this.previsualizaciones();
+          prev.push({ url: reader.result as string, file: file, principal: false });
+          this.previsualizaciones.set(prev);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    input.value = '';
+  }
+
+  marcarPrincipalNuevo(index: number): void {
+    const prev = this.previsualizaciones();
+    const updated = prev.map((p: any, i: number) => ({ ...p, principal: i === index }));
+    this.previsualizaciones.set(updated);
+  }
+
+  eliminarNuevo(index: number): void {
+    const prev = this.previsualizaciones();
+    prev.splice(index, 1);
+    this.previsualizaciones.set(prev);
+    const sel = this.fotosSeleccionadas();
+    sel.splice(index, 1);
+    this.fotosSeleccionadas.set(sel);
+  }
+
+  marcarPrincipalExistente(photoId: number): void {
+    if (!this.id()) return;
+    const fotos = this.fotosExistentes().slice();
+    const idx = fotos.findIndex((f: any) => f.id === photoId);
+    if (idx > -1) {
+      const [moved] = fotos.splice(idx, 1);
+      fotos.unshift(moved);
+      const ids = fotos.map((f: any) => f.id);
+      this.http.put('/api/propiedades/' + this.id() + '/imagenes/orden', { imagenes: ids }).subscribe(() => {
+        this.cargarFotos();
+      });
+    }
+  }
+
+  eliminarExistente(photoId: number): void {
+    if (!this.id()) return;
+    if (confirm('¿Eliminar esta foto?')) {
+      this.http.delete('/api/propiedades/' + this.id() + '/imagenes/' + photoId).subscribe(() => {
+        this.cargarFotos();
+      });
+    }
+  }
+
+  onDragStart(event: DragEvent, index: number): void {
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', index.toString());
+    }
+  }
+
+  allowDrop(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onDrop(event: DragEvent, dropIndex: number): void {
+    event.preventDefault();
+    const dt = event.dataTransfer;
+    if (!dt) return;
+    const dragIndex = parseInt(dt.getData('text/plain'));
+    if (isNaN(dragIndex) || dragIndex === dropIndex) return;
+    const fotos = this.fotosExistentes();
+    const arr = fotos.slice();
+    const dragged = arr.splice(dragIndex, 1)[0];
+    arr.splice(dropIndex, 0, dragged);
+    this.fotosExistentes.set(arr.map((f: any, i: number) => ({ ...f, sort_order: i })));
+  }
+
+  guardarOrden(): void {
+    if (!this.id()) return;
+    this.guardandoOrden.set(true);
+    const fotos = this.fotosExistentes();
+    const ids = fotos.map((f: any) => f.id);
+    this.http.put('/api/propiedades/' + this.id() + '/imagenes/orden', { imagenes: ids }).subscribe({
+      next: () => {
+        this.guardandoOrden.set(false);
+        this.cargarFotos();
+      },
+      error: () => {
+        this.guardandoOrden.set(false);
+      }
+    });
+  }
+
+    private cargarFotos(): void {
+    if (!this.id()) return;
+    this.http.get<any>('/api/propiedades/' + this.id() + '/imagenes').subscribe((res: any) => {
+      const imagenes = res.imagenes || res.data || [];
+      this.fotosExistentes.set(imagenes.map((img: any) => ({
+        id: img.id,
+        url: '/uploads/propiedades/' + img.nombre_archivo,
+        nombre_archivo: img.nombre_archivo,
+        orden: img.orden,
+        is_main: img.orden === 1
+      })));
+    });
+  }
+
+    private subirFotos(propertyId: number): void {
+    if (this.fotosSeleccionadas().length === 0) {
+      void this.router.navigate(['/propiedades']);
+      return;
+    }
+    this.subiendoFotos.set(true);
+    const sel = this.fotosSeleccionadas();
+    let completadas = 0;
+    const total = sel.length;
+    for (let i = 0; i < total; i++) {
+      const formData = new FormData();
+      formData.append('imagen', sel[i]);
+      this.http.post('/api/propiedades/' + propertyId + '/imagenes', formData).subscribe({
+        next: () => {
+          completadas++;
+          if (completadas === total) {
+            this.subiendoFotos.set(false);
+            void this.router.navigate(['/propiedades']);
+          }
+        },
+        error: () => {
+          completadas++;
+          if (completadas === total) {
+            this.subiendoFotos.set(false);
+            void this.router.navigate(['/propiedades']);
+          }
+        }
+      });
+    }
   }
 }

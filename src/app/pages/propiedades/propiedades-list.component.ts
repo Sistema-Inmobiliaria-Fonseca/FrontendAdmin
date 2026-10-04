@@ -63,7 +63,7 @@ import { PropiedadService } from '../../services/propiedad.service';
                 }
                 @for (propiedad of propiedades(); track propiedad.id) {
                   <tr>
-                    <td style="width:80px;">@if (propiedad.imagenes && propiedad.imagenes.length > 0) {<img [src]="'/uploads/propiedades/' + propiedad.imagenes[0].nombre_archivo" style="width:70px;height:50px;object-fit:cover;border-radius:6px;">} @else {<div style="width:70px;height:50px;background:#e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;">Sin foto</div>}</td><td class="table__strong">{{ propiedad.nombre }}</td>
+                    <td style="width:80px;">@if (propiedad.imagenes && propiedad.imagenes.length > 0) {<img [src]="propiedad.imagenes[0].url" style="width:70px;height:50px;object-fit:cover;border-radius:6px;">} @else {<div style="width:70px;height:50px;background:#e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280;">Sin foto</div>}</td><td class="table__strong">{{ propiedad.nombre }}</td>
                     <td>
                       <span class="badge" [ngClass]="estadoBadge(propiedad.estado)">
                         {{ estadoLabel(propiedad.estado) }}

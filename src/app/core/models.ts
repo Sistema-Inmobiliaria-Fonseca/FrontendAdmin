@@ -92,7 +92,8 @@ export interface PropiedadInput {
 }
 export interface PropiedadImagen {
   id: number;
-  nombre_archivo: string;
+  nombre: string;
+  nombre_archivo?: string;
   nombre_original: string;
   mime_type: string;
   tamano: number;

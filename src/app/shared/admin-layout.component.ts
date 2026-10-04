@@ -10,22 +10,13 @@ import { AuthService } from '../services/auth.service';
     <div class="admin">
       <aside class="admin__sidebar">
         <div class="admin__logo">
-          <svg
-            class="admin__logo-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M3 10.5 12 3l9 7.5" />
-            <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
-            <path d="M9.5 21v-6h5v6" />
-          </svg>
+           <img
+              class="admin__logo-imagen"
+              src="/logo.jpeg"
+              alt="Carlos Fonseca Negocios Inmobiliarios"
+            />
           <div>
-            <p class="admin__logo-title">Inmobiliaria</p>
+            <p class="admin__logo-title">Inmobiliaria Carlos Fonseca</p>
             <p class="admin__logo-subtitle">Panel administrativo</p>
           </div>
         </div>
@@ -137,9 +128,15 @@ import { AuthService } from '../services/auth.service';
         box-shadow: var(--shadow-sm);
       }
 
-      .admin__logo-icon {
-        width: 2rem;
-        height: 2rem;
+      .admin__logo-imagen {
+        width: 48px;
+        height: 48px;
+        max-width: 48px;
+        max-height: 48px;
+        object-fit: contain;
+        display: block;
+        flex-shrink: 0;
+        border-radius: 8px;
       }
 
       .admin__logo-title {

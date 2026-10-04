@@ -296,12 +296,12 @@ const MENSAJES: Record<string, string> = {
           <section class="card">
             <div class="card__header">
               <div>
-                <h3 class="card__title">Galería de fotos</h3>
+                <h3 class="card__title">Galeria de fotos</h3>
                 <p class="card__subtitle">Puedes subir varias fotos, arrastrarlas para reordenar y elegir la foto principal.</p>
               </div>
             </div>
             <div class="card__body">
-              <!-- Fotos existentes (edición) -->
+              <!-- Fotos existentes (edicion) -->
               @if (esEdicion() && fotosExistentes().length > 0) {
                 <div class="mb-4">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -340,7 +340,7 @@ const MENSAJES: Record<string, string> = {
 
               <!-- Nuevas fotos -->
               <div>
-                <h4 style="margin-bottom: 0.75rem;">{{ esEdicion() ? 'Añadir nuevas fotos' : 'Seleccionar fotos' }}</h4>
+                <h4 style="margin-bottom: 0.75rem;">{{ esEdicion() ? 'AÃ±adir nuevas fotos' : 'Seleccionar fotos' }}</h4>
                 <input type="file" multiple accept="image/*" (change)="onArchivosSeleccionados($event)" style="margin-bottom: 1rem;" />
                 
                 @if (previsualizaciones().length > 0) {
@@ -735,7 +735,7 @@ export class PropiedadFormComponent implements OnInit {
 
   eliminarExistente(photoId: number): void {
     if (!this.id()) return;
-    if (confirm('¿Eliminar esta foto?')) {
+    if (confirm('Eliminar esta foto?')) {
       this.http.delete('/api/propiedades/' + this.id() + '/imagenes/' + photoId).subscribe(() => {
         this.cargarFotos();
       });
@@ -784,13 +784,13 @@ export class PropiedadFormComponent implements OnInit {
     private cargarFotos(): void {
     if (!this.id()) return;
     this.http.get<any>('/api/propiedades/' + this.id() + '/imagenes').subscribe((res: any) => {
-      const imagenes = res.imagenes || res.data || [];
+      const imagenes = res.imagenes || res.data || res || [];
       this.fotosExistentes.set(imagenes.map((img: any) => ({
         id: img.id,
-        url: '/uploads/propiedades/' + img.nombre_archivo,
-        nombre_archivo: img.nombre_archivo,
+        url: img.url,
+        nombre: img.nombre,
         orden: img.orden,
-        is_main: img.orden === 1
+        is_main: img.es_principal !== undefined ? img.es_principal : (img.orden === 1)
       })));
     });
   }

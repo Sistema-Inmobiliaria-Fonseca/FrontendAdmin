@@ -97,22 +97,30 @@ const MENSAJES: Record<string, string> = {
                   }
                 </div>
 
-                <div class="field">
-                  <label class="field__label" for="valor">Valor <span class="field__optional">*</span></label>
-                  <input
-                    id="valor"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="field__input"
-                    formControlName="valor"
-                    placeholder="250000"
-                    [attr.aria-invalid]="campoInvalido('valor')"
-                  />
-                  @if (mensajeCampo('valor')) {
-                    <p class="field__error">{{ mensajeCampo('valor') }}</p>
-                  }
-                </div>
+                 <div class="field">
+                   <label class="field__label" for="valor">Valor <span class="field__optional">*</span></label>
+                   <div style="display: flex; gap: 0.5rem; align-items: center;">
+                     <input
+                       id="valor"
+                       type="number"
+                       min="0"
+                       step="0.01"
+                       class="field__input"
+                       formControlName="valor"
+                       placeholder="250000"
+                       [attr.aria-invalid]="campoInvalido('valor')"
+                       style="flex: 1;"
+                     />
+                     <select class="field__input" formControlName="moneda" style="width: 5rem;">
+                       @for (opcion of monedas; track opcion.valor) {
+                         <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+                       }
+                     </select>
+                   </div>
+                   @if (mensajeCampo('valor')) {
+                     <p class="field__error">{{ mensajeCampo('valor') }}</p>
+                   }
+                 </div>
 
                 <div class="field">
                   <label class="field__label" for="cantidad_habitaciones">
@@ -430,10 +438,16 @@ export class PropiedadFormComponent implements OnInit {
 
   readonly estados = ESTADOS_PROPIEDAD;
 
+  readonly monedas = [
+    { valor: 'ARS', etiqueta: 'ARS' },
+    { valor: 'USD', etiqueta: 'USD' },
+  ];
+
   readonly form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(200)]],
     metros_cuadrados: [null as number | null, [Validators.required, Validators.min(0)]],
     valor: [null as number | null, [Validators.required, Validators.min(0)]],
+    moneda: ['ARS' as string | null],
     cantidad_habitaciones: [null as number | null, [Validators.required, Validators.min(0)]],
     cantidad_ambientes: [null as number | null, [Validators.required, Validators.min(0)]],
     descripcion: ['' as string | null, [Validators.required, Validators.maxLength(5000)]],
@@ -512,16 +526,17 @@ export class PropiedadFormComponent implements OnInit {
       )
       .subscribe((propiedad) => {
         if (propiedad) {
-          this.form.patchValue({
-            nombre: propiedad.nombre,
-            metros_cuadrados: propiedad.metros_cuadrados,
-            valor: propiedad.valor,
-            cantidad_habitaciones: propiedad.cantidad_habitaciones,
-            cantidad_ambientes: propiedad.cantidad_ambientes,
-            descripcion: propiedad.descripcion,
-            apto_credito: propiedad.apto_credito,
-            estado: propiedad.estado,
-          });
+           this.form.patchValue({
+             nombre: propiedad.nombre,
+             metros_cuadrados: propiedad.metros_cuadrados,
+             valor: propiedad.valor,
+             moneda: propiedad.moneda || 'ARS',
+             cantidad_habitaciones: propiedad.cantidad_habitaciones,
+             cantidad_ambientes: propiedad.cantidad_ambientes,
+             descripcion: propiedad.descripcion,
+             apto_credito: propiedad.apto_credito,
+             estado: propiedad.estado,
+           });
           this.seleccionadas.set(propiedad.categorias.map((c) => c.id));
 
           if (propiedad.ubicacion) {
@@ -604,6 +619,7 @@ export class PropiedadFormComponent implements OnInit {
       localidad_id: this.localidadControl.value,
       metros_cuadrados: valor.metros_cuadrados,
       valor: valor.valor,
+      moneda: valor.moneda || 'ARS',
       cantidad_habitaciones: valor.cantidad_habitaciones,
       cantidad_ambientes: valor.cantidad_ambientes,
       descripcion,

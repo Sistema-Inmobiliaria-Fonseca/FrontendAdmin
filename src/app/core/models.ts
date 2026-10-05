@@ -66,6 +66,7 @@ export interface Propiedad {
   localidad_id: number | null;
   metros_cuadrados: number | null;
   valor: number | null;
+  moneda?: string | null;
   cantidad_habitaciones: number;
   cantidad_ambientes: number;
   descripcion: string | null;
@@ -83,6 +84,7 @@ export interface PropiedadInput {
   localidad_id?: number | null;
   metros_cuadrados?: number | null;
   valor?: number | null;
+  moneda?: string | null;
   cantidad_habitaciones?: number | null;
   cantidad_ambientes?: number | null;
   descripcion?: string | null;

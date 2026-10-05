@@ -78,9 +78,14 @@ import { PropiedadService } from '../../services/propiedad.service';
                       }
                     </td>
                     <td>{{ propiedad.metros_cuadrados !== null ? propiedad.metros_cuadrados + ' m²' : '—' }}</td>
-                     <td>
-                       {{ propiedad.valor !== null ? (propiedad.valor | currency: (propiedad.moneda || 'ARS'):'symbol-narrow':'1.0-0') : '—' }}
-                     </td>
+                    <td>
+                      @if (propiedad.valor !== null) {
+                        {{ propiedad.valor | currency: (propiedad.moneda ?? 'ARS'):'symbol-narrow':'1.0-0' }}
+                        <span style="font-size:0.75rem;color:var(--color-text-muted);">{{ propiedad.moneda ?? 'ARS' }}</span>
+                      } @else {
+                        —
+                      }
+                    </td>
                     <td>{{ propiedad.cantidad_ambientes }}</td>
                     <td>
                       @if (propiedad.categorias.length === 0) {

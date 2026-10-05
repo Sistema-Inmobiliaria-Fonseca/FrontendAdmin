@@ -58,7 +58,9 @@ export interface Ubicacion {
   pais: { id: number; nombre: string; codigo_iso: string };
 }
 
-export type EstadoPropiedad = 'disponible' | 'alquilada';
+export type EstadoPropiedad = 'disponible' | 'alquilada' | 'vendida';
+
+export type TipoMoneda = 'ARS' | 'USD';
 
 export interface Propiedad {
   id: number;
@@ -66,7 +68,7 @@ export interface Propiedad {
   localidad_id: number | null;
   metros_cuadrados: number | null;
   valor: number | null;
-  moneda?: string | null;
+  moneda?: TipoMoneda | null;
   cantidad_habitaciones: number;
   cantidad_ambientes: number;
   descripcion: string | null;
@@ -84,7 +86,7 @@ export interface PropiedadInput {
   localidad_id?: number | null;
   metros_cuadrados?: number | null;
   valor?: number | null;
-  moneda?: string | null;
+  moneda?: TipoMoneda | null;
   cantidad_habitaciones?: number | null;
   cantidad_ambientes?: number | null;
   descripcion?: string | null;

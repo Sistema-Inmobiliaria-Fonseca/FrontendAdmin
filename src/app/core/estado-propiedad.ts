@@ -7,12 +7,14 @@ export interface EstadoPropiedadOpcion {
 }
 
 /**
- * Los valores 'disponible' y 'alquilada' son los que acepta y devuelve la API.
- * 'alquilada' se muestra al usuario como "Ocupada": el texto visible no altera el valor persistido.
+ * Los valores 'disponible', 'alquilada' y 'vendida' son los que acepta y
+ * devuelve la API. 'alquilada' se muestra al usuario como "Ocupada": el texto
+ * visible no altera el valor persistido.
  */
 export const ESTADOS_PROPIEDAD: readonly EstadoPropiedadOpcion[] = [
   { valor: 'disponible', etiqueta: 'Disponible', badge: 'badge--success' },
   { valor: 'alquilada', etiqueta: 'Ocupada', badge: 'badge--info' },
+  { valor: 'vendida', etiqueta: 'Vendida', badge: 'badge--danger' },
 ];
 
 export function opcionEstado(estado: EstadoPropiedad): EstadoPropiedadOpcion | undefined {

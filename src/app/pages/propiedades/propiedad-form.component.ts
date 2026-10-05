@@ -1,12 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, forkJoin, of, switchMap, tap } from 'rxjs';
+import { catchError, concatMap, finalize, forkJoin, from, of, switchMap, tap } from 'rxjs';
 
 import { ApiError } from '../../services/api.service';
 import { HttpClient } from '@angular/common/http';
 import { ESTADOS_PROPIEDAD } from '../../core/estado-propiedad';
-import { Categoria, EstadoPropiedad, Localidad, Pais, Provincia, PropiedadInput } from '../../core/models';
+import { TIPOS_MONEDA } from '../../core/tipo-moneda';
+import { Categoria, EstadoPropiedad, Localidad, Pais, Provincia, PropiedadInput, TipoMoneda } from '../../core/models';
 import { CategoriaService } from '../../services/categoria.service';
 import { GeografiaService } from '../../services/geografia.service';
 import { PropiedadService } from '../../services/propiedad.service';
@@ -18,6 +19,7 @@ const MENSAJES: Record<string, string> = {
   'metros_cuadrados.min': 'La superficie no puede ser negativa.',
   'valor.required': 'El valor es obligatorio.',
   'valor.min': 'El valor no puede ser negativo.',
+  'moneda.required': 'La moneda es obligatoria.',
   'cantidad_habitaciones.required': 'La cantidad de habitaciones es obligatoria.',
   'cantidad_habitaciones.min': 'La cantidad de habitaciones no puede ser negativa.',
   'cantidad_ambientes.required': 'La cantidad de ambientes es obligatoria.',
@@ -98,25 +100,34 @@ const MENSAJES: Record<string, string> = {
                 </div>
 
                  <div class="field">
+                   <label class="field__label" for="moneda">Moneda <span class="field__optional">*</span></label>
+                   <select
+                     id="moneda"
+                     class="field__select"
+                     formControlName="moneda"
+                     [attr.aria-invalid]="campoInvalido('moneda')"
+                   >
+                     @for (opcion of monedas; track opcion.valor) {
+                       <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+                     }
+                   </select>
+                   @if (mensajeCampo('moneda')) {
+                     <p class="field__error">{{ mensajeCampo('moneda') }}</p>
+                   }
+                 </div>
+
+                 <div class="field">
                    <label class="field__label" for="valor">Valor <span class="field__optional">*</span></label>
-                   <div style="display: flex; gap: 0.5rem; align-items: center;">
-                     <input
-                       id="valor"
-                       type="number"
-                       min="0"
-                       step="0.01"
-                       class="field__input"
-                       formControlName="valor"
-                       placeholder="250000"
-                       [attr.aria-invalid]="campoInvalido('valor')"
-                       style="flex: 1;"
-                     />
-                     <select class="field__input" formControlName="moneda" style="width: 5rem;">
-                       @for (opcion of monedas; track opcion.valor) {
-                         <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
-                       }
-                     </select>
-                   </div>
+                   <input
+                     id="valor"
+                     type="number"
+                     min="0"
+                     step="0.01"
+                     class="field__input"
+                     formControlName="valor"
+                     placeholder="250000"
+                     [attr.aria-invalid]="campoInvalido('valor')"
+                   />
                    @if (mensajeCampo('valor')) {
                      <p class="field__error">{{ mensajeCampo('valor') }}</p>
                    }
@@ -354,8 +365,14 @@ const MENSAJES: Record<string, string> = {
                 @if (previsualizaciones().length > 0) {
                   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                     @for (prev of previsualizaciones(); track $index; let i = $index) {
-                      <div style="position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;"
-                           [style.border]="prev.principal ? '2px solid #3b82f6' : '1px solid #e5e7eb'">
+                      <div
+                        draggable="true"
+                        (dragstart)="onDragStart($event, i)"
+                        (dragover)="allowDrop($event)"
+                        (drop)="onDropNuevo($event, i)"
+                        style="position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; cursor: move;"
+                        [style.border]="prev.principal ? '2px solid #3b82f6' : '1px solid #e5e7eb'"
+                      >
                         <img [src]="prev.url" style="width: 100%; height: 120px; object-fit: cover;" />
                         @if (prev.principal) {
                           <span style="position: absolute; top: 8px; left: 8px; background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">Principal</span>
@@ -370,6 +387,7 @@ const MENSAJES: Record<string, string> = {
                       </div>
                     }
                   </div>
+                  <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Arrastra las fotos para cambiar el orden: la primera que quede se guarda como principal</p>
                 }
               </div>
             </div>
@@ -438,16 +456,13 @@ export class PropiedadFormComponent implements OnInit {
 
   readonly estados = ESTADOS_PROPIEDAD;
 
-  readonly monedas = [
-    { valor: 'ARS', etiqueta: 'ARS' },
-    { valor: 'USD', etiqueta: 'USD' },
-  ];
+  readonly monedas = TIPOS_MONEDA;
 
   readonly form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(200)]],
     metros_cuadrados: [null as number | null, [Validators.required, Validators.min(0)]],
     valor: [null as number | null, [Validators.required, Validators.min(0)]],
-    moneda: ['ARS' as string | null],
+    moneda: ['ARS' as TipoMoneda, Validators.required],
     cantidad_habitaciones: [null as number | null, [Validators.required, Validators.min(0)]],
     cantidad_ambientes: [null as number | null, [Validators.required, Validators.min(0)]],
     descripcion: ['' as string | null, [Validators.required, Validators.maxLength(5000)]],
@@ -530,7 +545,7 @@ export class PropiedadFormComponent implements OnInit {
              nombre: propiedad.nombre,
              metros_cuadrados: propiedad.metros_cuadrados,
              valor: propiedad.valor,
-             moneda: propiedad.moneda || 'ARS',
+             moneda: propiedad.moneda ?? 'ARS',
              cantidad_habitaciones: propiedad.cantidad_habitaciones,
              cantidad_ambientes: propiedad.cantidad_ambientes,
              descripcion: propiedad.descripcion,
@@ -619,7 +634,7 @@ export class PropiedadFormComponent implements OnInit {
       localidad_id: this.localidadControl.value,
       metros_cuadrados: valor.metros_cuadrados,
       valor: valor.valor,
-      moneda: valor.moneda || 'ARS',
+      moneda: valor.moneda,
       cantidad_habitaciones: valor.cantidad_habitaciones,
       cantidad_ambientes: valor.cantidad_ambientes,
       descripcion,
@@ -720,19 +735,48 @@ export class PropiedadFormComponent implements OnInit {
     input.value = '';
   }
 
+  /**
+   * El backend toma la principal como la de `orden` 1, asi que marcar principal
+   * mueve la foto al principio en vez de solo rotularla: el orden que se ve es el
+   * que se sube.
+   */
   marcarPrincipalNuevo(index: number): void {
-    const prev = this.previsualizaciones();
-    const updated = prev.map((p: any, i: number) => ({ ...p, principal: i === index }));
-    this.previsualizaciones.set(updated);
+    const prev = this.previsualizaciones().slice();
+    if (index < 0 || index >= prev.length) return;
+    const [movida] = prev.splice(index, 1);
+    prev.unshift(movida);
+    this.previsualizaciones.set(prev.map((p: any, i: number) => ({ ...p, principal: i === 0 })));
+    this.sincronizarSeleccion();
   }
 
   eliminarNuevo(index: number): void {
-    const prev = this.previsualizaciones();
+    const prev = this.previsualizaciones().slice();
     prev.splice(index, 1);
     this.previsualizaciones.set(prev);
-    const sel = this.fotosSeleccionadas();
-    sel.splice(index, 1);
-    this.fotosSeleccionadas.set(sel);
+    this.sincronizarSeleccion();
+  }
+
+  /**
+   * Reordena las fotos todavia no subidas. `previsualizaciones` guarda el File de
+   * cada preview, asi que el array de subida se reconstruye desde el orden visible
+   * y no puede quedar desfasado del (los FileReader resuelven en cualquier orden).
+   */
+  onDropNuevo(event: DragEvent, dropIndex: number): void {
+    event.preventDefault();
+    const dt = event.dataTransfer;
+    if (!dt) return;
+    const dragIndex = parseInt(dt.getData('text/plain'));
+    if (isNaN(dragIndex) || dragIndex === dropIndex) return;
+    const prev = this.previsualizaciones().slice();
+    const [dragged] = prev.splice(dragIndex, 1);
+    prev.splice(dropIndex, 0, dragged);
+    this.previsualizaciones.set(prev);
+    this.sincronizarSeleccion();
+  }
+
+  /** Mantiene `fotosSeleccionadas` en el mismo orden que la galeria visible. */
+  private sincronizarSeleccion(): void {
+    this.fotosSeleccionadas.set(this.previsualizaciones().map((p: any) => p.file as File));
   }
 
   marcarPrincipalExistente(photoId: number): void {
@@ -812,33 +856,29 @@ export class PropiedadFormComponent implements OnInit {
   }
 
     private subirFotos(propertyId: number): void {
-    if (this.fotosSeleccionadas().length === 0) {
-      void this.router.navigate(['/propiedades']);
-      return;
-    }
-    this.subiendoFotos.set(true);
-    const sel = this.fotosSeleccionadas();
-    let completadas = 0;
-    const total = sel.length;
-    for (let i = 0; i < total; i++) {
-      const formData = new FormData();
-      formData.append('imagen', sel[i]);
-      this.http.post('/api/propiedades/' + propertyId + '/imagenes', formData).subscribe({
-        next: () => {
-          completadas++;
-          if (completadas === total) {
+      const sel = this.fotosSeleccionadas();
+      if (sel.length === 0) {
+        void this.router.navigate(['/propiedades']);
+        return;
+      }
+      this.subiendoFotos.set(true);
+      // De a una y en el orden de la galeria: el backend asigna
+      // `orden = siguienteOrden()` en cada alta, asi que subir todas en paralelo
+      // mezclaba el orden y la principal quedaba al azar.
+      from(sel)
+        .pipe(
+          concatMap((file) => {
+            const formData = new FormData();
+            formData.append('imagen', file);
+            return this.http
+              .post('/api/propiedades/' + propertyId + '/imagenes', formData)
+              .pipe(catchError(() => of(null)));
+          }),
+          finalize(() => {
             this.subiendoFotos.set(false);
             void this.router.navigate(['/propiedades']);
-          }
-        },
-        error: () => {
-          completadas++;
-          if (completadas === total) {
-            this.subiendoFotos.set(false);
-            void this.router.navigate(['/propiedades']);
-          }
-        }
-      });
+          }),
+        )
+        .subscribe();
     }
-  }
 }

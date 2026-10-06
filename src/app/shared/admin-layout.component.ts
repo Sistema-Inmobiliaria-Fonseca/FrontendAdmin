@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
         <div class="admin__logo">
            <img
               class="admin__logo-imagen"
-              src="/logo.jpeg"
+              src="logo.jpeg"
               alt="Carlos Fonseca Negocios Inmobiliarios"
             />
           <div>

@@ -40,13 +40,16 @@ export class AuthService {
     this.loadingState.set(true);
 
     return this.api
-      .post<AuthSession>(LOGIN_URL, {
+      .post<any>(LOGIN_URL, {
         email: credentials.email,
         password: credentials.password,
         remember: credentials.remember,
       })
       .pipe(
-        map((session) => {
+        map((response) => {
+          // Extrae 'data' si viene envuelto en la respuesta estándar de PHP
+          const session: AuthSession = response?.data ? response.data : response;
+
           if (!session?.token || !session.user) {
             throw new Error('La respuesta de autenticación no fue válida.');
           }
@@ -98,14 +101,16 @@ export class AuthService {
     }
 
     try {
-      const parsed = JSON.parse(raw) as AuthSession;
+      const parsed = JSON.parse(raw);
+      // Soporta leer token tanto directo como dentro de .data por compatibilidad
+      const token = parsed?.token || parsed?.data?.token;
 
-      if (!parsed?.token) {
+      if (!token) {
         this.clearStorage();
         return null;
       }
 
-      return parsed;
+      return parsed.token ? (parsed as AuthSession) : (parsed.data as AuthSession);
     } catch {
       this.clearStorage();
       return null;
